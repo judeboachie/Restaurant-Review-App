@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Review App</title>
+</head>
+<body>
+    <h1>Retaurants</h1>
+    <br><br><br>
+
+    <h3><a href="krustykrab.html" target="_blank">Krusty Krab</a></h3><br>
+    <h3><a href="mcdonalds.html" target="_blank">McDonald's</a></h3><br>
+    <h3><a href="timhortons.html" target="_blank">Tim Hortons</a></h3>
+    
+
+
+<script>
+
+// Get restaurant data from the server
+
+function getRestaurants(){
+    fetch("http://127.0.0.1:3000/")
+    .then((data) =>{
+        console.log(data)
+        return data.json();
+    })
+    .then((data) => {
+        console.log(data);
+    })
+    .catch((error) =>{
+        console.log("Error. Something went wrong!");
+    })
+}
+
+getRestaurants();
+</script>
+</body>
+</html>
