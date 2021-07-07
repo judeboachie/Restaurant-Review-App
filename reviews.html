@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Review App</title>
+</head>
+<body>
+    <h1><div id="restName"></div></h1>
+    <div id="container"></div>
+    
+
+
+<script>
+    const restName = document.getElementById("restName");
+    const container = document.getElementById("container");
+
+
+    // Get all reviews
+    
+    function getReviews(){
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+        fetch(`http://127.0.0.1:3000/restaurants/${id}/reviews`)
+        .then((data) =>{
+            console.log(data)
+            return data.json();            
+        })
+        .then((data) => {
+            console.log(data);
+            drawPage(data);
+        })
+        .catch((error) =>{
+            console.log("Error. Something went wrong!");
+        })
+    }
+    
+    getReviews();
+
+    function drawPage(reviews){
+        reviews.forEach(item =>{
+        let comment = document.createElement("p")
+        comment.innerHTML = item.review
+        comment.innerHTML += ` <br>  - - - - ${item.author}`
+        container.appendChild(comment)
+        restName.innerHTML = item.restaurant
+        console.log(item)
+    })
+}
+    </script>
+</body>
+</html>
