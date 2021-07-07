@@ -10,13 +10,12 @@
     <h1>Retaurants</h1>
     <br><br><br>
 
-    <h3><a href="krustykrab.html" target="_blank">Krusty Krab</a></h3><br>
-    <h3><a href="mcdonalds.html" target="_blank">McDonald's</a></h3><br>
-    <h3><a href="timhortons.html" target="_blank">Tim Hortons</a></h3>
+    <div id="container"></div>
     
 
 
 <script>
+    const container = document.getElementById("container");
 
 // Get restaurant data from the server
 
@@ -28,6 +27,7 @@ function getRestaurants(){
     })
     .then((data) => {
         console.log(data);
+        showRestaurants(data);
     })
     .catch((error) =>{
         console.log("Error. Something went wrong!");
@@ -35,6 +35,19 @@ function getRestaurants(){
 }
 
 getRestaurants();
+
+
+function showRestaurants(restaurants){
+    restaurants.forEach(restaurant =>{
+        let linkElement = document.createElement("a")
+        linkElement.innerHTML = restaurant.name
+        linkElement.setAttribute("href", `reviews.html?id=${restaurant.id}`)
+        linkElement.appendChild(document.createElement("br"))
+        container.appendChild(linkElement)
+        console.log(restaurant)
+    })
+
+}
 </script>
 </body>
 </html>
