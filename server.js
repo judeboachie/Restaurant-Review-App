@@ -15,61 +15,42 @@ app.use((req, res, next) => { // Bypass CORS policy error
     next();
   });
 
-const restaurants = db 
+app.get("/", (req, res) => { // Landing page that displays all restaurants
+    db 
    .collection("Restaurants") // specify the collection to be queried
    .get() // get request
    .then((querySnapshot) => { // an object
         return querySnapshot.docs.map(item => {
         console.log(item.data()) // similar to .json()
-        return item.data()
+        let data = item.data()
+         data["id"] = item.id
+         console.log(item.id)
+        return data;
         })             
     })
+    .then((items) => {
+        res.send(items)
+    }) 
+    });
 
-const KK = db  // Krusty Krab reviews
-        .collection("Review").where("restaurant", "==", "Krusty Krab") 
-        .get() 
-        .then((querySnapshot) => {
-            return querySnapshot.docs.map(item => {
-            console.log(item.data())
-            return item.data() 
-            })             
-        })
-
-const McD = db // McDonald's reviews
-    .collection("Review").where("restaurant", "==", "McDonald's") 
+app.get("/restaurants/:id/reviews", (req, res) => { //the : means we are expecting a parameter called id
+    db 
+    .collection("Review").where("restaurantID", "==", req.params.id) //this refers to :id 
     .get() 
-    .then((querySnapshot) => { 
-            return querySnapshot.docs.map(item => {
-            console.log(item.data())
-            return item.data() 
-            })             
-        })
-
-const Timmies = db // Tim Hortons reviews
-        .collection("Review").where("restaurant", "==", "Tim Hortons") 
-        .get() 
-        .then((querySnapshot) => { 
-            return querySnapshot.docs.map(item => {
-            console.log(item.data())
-            return item.data() 
-            })             
-        });
-
-app.get("/", (req, res) => { // Landing page that displays all restaurants
-    res.send(restaurants);
+    .then((querySnapshot) => {
+         return querySnapshot.docs.map(item => {
+         console.log(item.data())   
+         let data = item.data()
+         data["id"] = item.id
+         console.log(item.id)
+         return data
+         })             
+     })
+     .then((data) => {
+         res.send(data)
+     })
     });
 
-app.get("/krustykrab", (req, res) => { // Page with all Krusty Krab reviews
-        res.send(KK);
-    });
-    
-app.get("/mcdonalds", (req, res) => { // Page with all McDonald's reviews
-        res.send(McD);
-    });
-
-app.get("/timhortons", (req, res) => { // Page with all Tim Hortons reviews
-        res.send(Timmies);
-    });
 
 const server = app.listen(3000, hostname, () => {
         console.log(`Server running at http://${hostname}:${port}/`);
