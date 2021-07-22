@@ -57,13 +57,21 @@ router
     .route("/:restaurantId/:reviewID") 
     .put((req, res) => {
       db.collection("Review").doc(req.params.reviewID)
-        .set(data, {merge: true}) 
+        .set(req.body, {merge: true}) 
         .then((q) => {
           res.send(
             q.docs.map((item) => {
               return item.data();
             })
           );
+        })
+        .then(() => {
+          res.status(200);
+          res.json({ error: null });
+        })
+        .catch(() => {
+          res.status(400);
+          res.json({ error: "Something went wrong" });
         });
     })
 
@@ -73,16 +81,16 @@ router
     .route("/:restaurantId/:reviewID") // reviews/:id
     .delete((req, res) => { 
       db.collection(`Review`).doc(req.params.reviewID)
-        .delete(); // Delete the document        
+        .delete() //Delete the document
+        .then(() => {
+          res.status(200);
+          res.json({ error: null });
+        })
+        .catch(() => {
+          res.status(400);
+          res.json({ error: "Something went wrong" });
+        });         
     })
-    .then(() => {
-      res.status(200);
-      res.json({ error: null });
-    })
-    .catch(() => {
-      res.status(400);
-      res.json({ error: "Something went wrong" });
-    })   
 
 module.exports = router // Exporting the router so it can be imported in other files. It's called reviewsRouter in the server.js file.
 //This should always be the last line
