@@ -5,24 +5,111 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Restaurant Review App</title>
+    <style>
+
+      /* The Modal (background) */
+      .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgb(0,0,0); /* Fallback color */
+        background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+      }
+
+      /* Modal Content/Box */
+      .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto; /* 15% from the top and centered */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Could be more or less, depending on screen size */
+      }
+
+      /* The Close Button */
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+    </style>
 </head>
 <body>
     <h1><div id="restName"></div></h1>
     <div id="container"></div>
-    
+    <div>
+        <form onsubmit="return formSubmit(this);">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" placeholder="Enter your name.."/>
+      
+            <label for="newReview">Review</label>
+            <input type="text" id="newReview" name="newReview" placeholder="Share your thoughts.."/>
+            <input type="submit" value="Submit" />
+          </form>          
+    </div>
+
+    <!--Dialogue box that will show up when the edit button is pressed-->
+    <div id="myModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="closeButton">&times;</span>
+          <form id="editForm">
+            <p id="currentReviewId" style="display:none"></p>
+            <label for="editName">Name</label>
+            <input type="text" id="editName" name="editName"/><br><br>
+
+            <label for="editReview">Review</label>
+            <input type="text" id="editReview" name="editReview"/><br><br>
+
+            <button type="button" onclick=editFormSubmit()>Edit</button>
+          </form>
+      </div>
+    </div>
 
 
 <script>
+    // DOM elements
+    const urlParams = new URLSearchParams(window.location.search);
+    const restaurantId = urlParams.get('id');
+
     const restName = document.getElementById("restName");
     const container = document.getElementById("container");
-
-
-    // Get all reviews
     
-    function getReviews(){
-        const urlParams = new URLSearchParams(window.location.search);
-        const id = urlParams.get('id');
-        fetch(`http://127.0.0.1:3000/restaurants/${id}/reviews`)
+    // Elements for editing reviews
+    const modal = document.getElementById("myModal");
+    const span = document.getElementById("closeButton");
+    const editNameField = document.getElementById("editName");
+    const editReviewField = document.getElementById("editReview");
+    const currentReviewId = document.getElementById("currentReviewId")
+
+    // For the modal
+    span.onclick = function() {
+              modal.style.display = "none";
+            }
+            
+            window.onclick = function(event) {
+              if (event.target == modal) {
+                modal.style.display = "none";
+              }
+            }
+
+
+// Get all reviews
+    
+function getReviews(){
+        fetch(`http://127.0.0.1:3000/reviews/${restaurantId}`)
         .then((data) =>{
             console.log(data)
             return data.json();            
@@ -36,17 +123,137 @@
         })
     }
     
-    getReviews();
+getReviews();
 
-    function drawPage(reviews){
+
+// Display all reviews
+function drawPage(reviews){
         reviews.forEach(item =>{
         let comment = document.createElement("p")
-        comment.innerHTML = item.review
-        comment.innerHTML += ` <br>  - - - - ${item.author}`
+        comment.setAttribute("reviewID", item.id)
+        comment.innerHTML = `${item.review}<br>- - - - ${item.author}`
+
+        // Creating and edit button for PUT requests
+        let editButton = document.createElement("button")
+        editButton.innerHTML = "Edit"        
+        comment.appendChild(editButton)
+        editButton.addEventListener('click', (e) => {
+            // Open a dialogue box to edit
+            let comment = e.target.parentElement
+            let reviewID = comment.getAttribute("reviewid")
+            console.log(comment)
+            console.log(reviewID)
+            
+            modal.style.display = "block";
+            editNameField.value = item.author
+            editReviewField.value = item.review
+            currentReviewId.innerHTML = reviewID;
+        })
+            
+        
+        // Creating a delete button for DELETE requests
+        let deleteButton = document.createElement("button")
+        deleteButton.innerHTML = "Delete"        
+        comment.appendChild(deleteButton)
+        deleteButton.addEventListener('click', (e) =>{
+            let reviewID = e.target.parentElement.getAttribute("reviewID")
+            console.log(reviewID)
+            deleteReview(reviewID)    
+        })        
+
         container.appendChild(comment)
         restName.innerHTML = item.restaurant
         console.log(item)
     })
+}
+
+function formSubmit(form) {
+        // Grab the name and review input values from the form object
+        const userName = form.name.value; // .name works as long the label's for= attirubte matches the input's id= or name= attributes
+        const userReview = form.newReview.value; // .newReview works as long the label's for= attirubte matches the input's id= or name= attributes
+        console.log("name: " + userName, "review: " + userReview)
+        addReview(userName, userReview);
+        return false;
+      }
+
+// A function to add a review (POST)
+function addReview(userName, userReview){
+    fetch(`http://127.0.0.1:3000/reviews/${restaurantId}`, { 
+       method: "POST",
+       headers: {
+         "Content-Type": "application/json", // This lets the server know that we're sending a json object
+       },
+       body: JSON.stringify({ // The body object contains any info we want to send to the server 
+          author: userName,
+          name: userName,
+          restaurant: restName.innerHTML,
+          restID: restaurantId,
+          picture: "123.jpeg",
+          review: userReview,
+        })           
+     })
+       .then((response) => response.json())
+       .then((data) => {
+         console.log("Success:", data);
+         location.reload();
+       })
+       .catch((error) => {
+         console.error("Error:", error);
+       });
+}
+
+
+function editFormSubmit(form) {
+        // Grab the name and review input values from the editing form object
+        const editedUserName = editNameField.value; 
+        const editedUserReview = editReviewField.value; 
+        const reviewID = currentReviewId.innerHTML      
+        console.log("name: " + editedUserName, "review: " + editedUserReview, "reviewID: " + reviewID)
+        editReview(editedUserName, editedUserReview, reviewID);        
+      }
+
+
+// A function to update a review (PUT)
+function editReview(editedUserName, editedUserReview, reviewID){
+    fetch(`http://127.0.0.1:3000/reviews/${restaurantId}/${reviewID}`, { 
+       method: "PUT",
+       headers: {
+         "Content-Type": "application/json",
+       },
+       body: JSON.stringify({ 
+          author: editedUserName,
+          name: editedUserName,
+          restaurant: restName.innerHTML,
+          restID: restaurantId,
+          picture: "123.jpeg",
+          review: editedUserReview,
+          createdAt: "",
+        })           
+     })
+       .then((response) => response.json())
+       .then((data) => {
+         console.log("Success:", data);
+         location.reload()
+       })
+       .catch((error) => {
+         console.error("Error:", error);
+       });
+}
+
+
+// A function to delete a review (DELETE)
+function deleteReview(reviewID){
+    fetch(`http://127.0.0.1:3000/reviews/${restaurantId}/${reviewID}`, { 
+       method: "DELETE",
+       headers: {
+         "Content-Type": "application/json",
+       }           
+     })
+       .then(location.reload())
+       .then(console.log(`Successful deletion: ${reviewID}`))       
+       .catch((error) => {
+         console.error("Error:", error);
+       });
 }
     </script>
 </body>
