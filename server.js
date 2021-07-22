@@ -10,10 +10,18 @@ const app = express();
 const hostname = "127.0.0.1";
 const port = 3000;
 
-app.use((req, res, next) => { // Bypass CORS policy error
-    res.header("Access-Control-Allow-Origin", "*");
-    next();
-  });
+const cors = require("cors") // middleware
+app.use(cors())
+
+app.use((req, res, next) => {
+    console.log("TIME:", Date.now());
+    next(); // middleware finished
+   });
+
+app.use(express.json()) // gets json data and converts to object
+const reviewsRouter = require("./routes/reviews") // Inside a folder called "routes", there is a js file called "reviews" that we are importing here
+
+app.use("/reviews" , reviewsRouter) // Any endpoint that begins with /reviews will be handled by the reviews.js file
 
 app.get("/", (req, res) => { // Landing page that displays all restaurants
     db 
@@ -33,23 +41,6 @@ app.get("/", (req, res) => { // Landing page that displays all restaurants
     }) 
     });
 
-app.get("/restaurants/:id/reviews", (req, res) => { //the : means we are expecting a parameter called id
-    db 
-    .collection("Review").where("restaurantID", "==", req.params.id) //this refers to :id 
-    .get() 
-    .then((querySnapshot) => {
-         return querySnapshot.docs.map(item => {
-         console.log(item.data())   
-         let data = item.data()
-         data["id"] = item.id
-         console.log(item.id)
-         return data
-         })             
-     })
-     .then((data) => {
-         res.send(data)
-     })
-    });
 
 
 const server = app.listen(3000, hostname, () => {
