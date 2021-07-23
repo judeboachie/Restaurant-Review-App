@@ -3,8 +3,8 @@ const db = admin.firestore();
 var express = require("express"); // import express 
 var router = express.Router() // create the router
 
-// a GET request to read all the reviews for a restaurant
 
+// a GET request to read all the reviews for a restaurant
 router.route("/:restaurantId") 
     .get((req, res) => { //the : means we are expecting a parameter called restaurantId
         db 
@@ -22,11 +22,10 @@ router.route("/:restaurantId")
          .then((data) => {
              res.send(data)
          })
-        });
+});
 
 
 // a POST request to create a review
-
 router
     .route("/:restaurantId")
     .post((req, res) => {
@@ -48,7 +47,7 @@ router
           res.status(400);
           res.json({ error: "Something went wrong" });
         });
-    });
+});
     
     
 
@@ -57,25 +56,20 @@ router
     .route("/:restaurantId/:reviewID") 
     .put((req, res) => {
       db.collection("Review").doc(req.params.reviewID)
-        .set(req.body, {merge: true}) 
-        .then((q) => {
-          res.send(
-            q.docs.map((item) => {
-              return item.data();
-            })
-          );
-        })
+        .set(req.body, {merge: true})         
         .then(() => {
           res.status(200);
           res.json({ error: null });
         })
-        .catch(() => {
+        .catch((error) => {
+          console.log(error)
           res.status(400);
           res.json({ error: "Something went wrong" });
         });
-    })
+})
 
-    
+
+
 // a DELETE request to delete a review
 router
     .route("/:restaurantId/:reviewID") // reviews/:id
@@ -90,7 +84,8 @@ router
           res.status(400);
           res.json({ error: "Something went wrong" });
         });         
-    })
+})
+        
 
 module.exports = router // Exporting the router so it can be imported in other files. It's called reviewsRouter in the server.js file.
 //This should always be the last line
