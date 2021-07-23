@@ -1,0 +1,45 @@
+/*Stylesheet for the Restaurant Review App*/
+
+
+button{
+    margin: 5px;
+    word-wrap: break-word;                          
+}
+
+body{
+    background-image: linear-gradient(lightblue, cyan);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    background-attachment: fixed;
+    text-shadow: 2px 2px 5px grey;
+}
+
+input{
+    width: 15%;
+}
+
+#appName, #restName{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
+
+#container{
+    margin-left: 5%;
+    margin-right: 5%;
+    word-wrap: break-word;
+}
+
+#formContainer{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#buttonContainer{
+    display:flex; 
+    flex-direction:column; 
+    align-items: center
+}
