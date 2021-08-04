@@ -23,6 +23,26 @@ const reviewsRouter = require("./routes/reviews") // Inside a folder called "rou
 
 app.use("/reviews" , reviewsRouter) // Any endpoint that begins with /reviews will be handled by the reviews.js file
 
+function checkAuth(req, res, next) { // creating the middleware
+  if (req.headers.authtoken) { // the token is attached to the header of the get request on index.html "getRestaurants(authToken)"
+    admin
+      .auth()
+      .verifyIdToken(req.headers.authtoken) // want to verify that this is a valid token 
+      .then((user) => { // gives back a firebase user object 
+        console.log("verified");
+        res.locals.userId = user.user_id // store this id in res.locals
+        next(); // accept the request and pass it over to the router 
+      })
+      .catch(() => {
+        res.status(403).send("Unauthorized"); // verification failed, so reject the request
+      });
+  } else {
+    res.status(403).send("Unauthorized"); // no auth token provided
+  }
+}
+
+app.use("/", checkAuth); // use this middleware on the get request for route "/"
+
 app.get("/", (req, res) => { // Landing page that displays all restaurants
     db 
    .collection("Restaurants") // specify the collection to be queried
