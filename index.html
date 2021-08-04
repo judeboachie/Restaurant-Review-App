@@ -13,17 +13,111 @@
     <h1 id="appName">Retaurants</h1>
     <br><br><br>
 
+    <div id="loginContainer">
+        <input id="emailField" type="text" placeholder="Enter your email address">
+        <br>
+        <input id="passwordField" type="password" placeholder="Enter your password">
+        <br>
+        
+        <br>
+        <button id="loginButton" type="button" onclick="logIn(emailField, passwordField)">Login!</button>
+    
+        <br><br>
+        <button id="logoutButton" type="button" onclick="logOut()">Log out!</button>
+        </div>
+
     <div id="container" class="list-group lead" style="text-align: center;"></div>
     
 
 
-<script>
+
+</body>
+
+
+  <!-- Insert these scripts at the bottom of the HTML, but before you use any Firebase services -->
+
+  <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+
+  <!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-analytics.js"></script>
+
+  <!-- Add Firebase products that you want to use -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+
+  <script>
+    // TODO: Replace the following with your app's Firebase project configuration
+    // For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
+    var firebaseConfig = {
+        apiKey: "AIzaSyDAROsN8zZlUjXlyu1wB0D58yv_TP75ZWc",
+        authDomain: "tutorial-47d32.firebaseapp.com",
+        projectId: "tutorial-47d32",
+        storageBucket: "tutorial-47d32.appspot.com",
+        messagingSenderId: "692836133513",
+        appId: "1:692836133513:web:237b16dd7c82ed9829f458"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);   
+
+    let isSignedIn = false; 
+    
+// DOM Elements
+    const loginContainer = document.getElementById("loginContainer");
+    const emailField = document.getElementById("emailField")
+    const passwordField = document.getElementById("passwordField")
+    const loginButton = document.getElementById("loginButton")
+    const logoutButton = document.getElementById("logoutButton")
+
     const container = document.getElementById("container");
 
-// Get restaurant data from the server
 
-function getRestaurants(){
-    fetch("http://127.0.0.1:3000/")
+// Log in
+function logIn(emailField, passwordField){
+    const email = emailField.value
+    const password = passwordField.value
+    console.log("Email: " + email, "Password: " + password)
+
+        
+    firebase
+    .auth()
+    .setPersistence(firebase.auth.Auth.Persistence.LOCAL) // set the persistence type
+    .then(() => {
+      return firebase
+        .auth()
+        .signInWithEmailAndPassword(email, password);
+        console.log(email, password)
+    })
+    .then((userCredential) => {
+      // Signed in
+      isSignedIn = true;
+      var user = userCredential.user;
+      // ...
+      console.log(user); // check the console to see what data we get back about the user
+      firebase.auth()
+      .currentUser.getIdToken(true)    
+      .then((idToken) => {
+          console.log(idToken)
+          getRestaurants(idToken);
+      })
+    })
+    .catch((error) => {
+      // Handle Errors here.
+      var errorCode = error.code;
+      var errorMessage = error.message;
+      console.log(error);
+    });
+};
+
+// Get restaurant data from the server
+function getRestaurants(authToken){
+    fetch("http://127.0.0.1:3000/", {
+        method: "GET",
+        headers: {
+            AuthToken: authToken
+        }
+    })
     .then((data) =>{
         console.log(data)
         return data.json();
@@ -37,11 +131,9 @@ function getRestaurants(){
     })
 }
 
-getRestaurants();
-
-
-
+// Displays restaurants on the webpage
 function showRestaurants(restaurants){
+    loginContainer.style.display = "none";
     restaurants.forEach(restaurant =>{
         let linkElement = document.createElement("a")
         linkElement.classList.add("list-group-item", "list-group-item-primary", "list-group-item-action")
@@ -51,8 +143,25 @@ function showRestaurants(restaurants){
         container.appendChild(linkElement)
         console.log(restaurant)
     })
-
 }
-</script>
-</body>
+
+
+// Log out
+function logOut(){
+    firebase
+    .auth()
+    .signOut()
+    .then(() => {
+      // Sign-out successful.
+      isSignedIn = false;
+      console.log("Signed out")
+    })
+    .catch((error) => {
+      // an error occured
+      var errorCode = error.code
+      var errorMessage = error.message;
+      console.log(error) 
+    });
+}
+  </script>
 </html>
