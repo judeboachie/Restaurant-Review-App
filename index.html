@@ -10,58 +10,52 @@
     <title>Restaurant Review App</title>
 </head>
 <body>
+    
     <h1 id="appName">Retaurants</h1>
     <br><br><br>
-
     <div id="loginContainer">
         <input id="emailField" type="text" placeholder="Enter your email address">
         <br>
         <input id="passwordField" type="password" placeholder="Enter your password">
-        <br>
-        
-        <br>
-        <button id="loginButton" type="button" onclick="logIn(emailField, passwordField)">Login!</button>
-    
         <br><br>
-        <button id="logoutButton" type="button" onclick="logOut()">Log out!</button>
-        </div>
+        <button id="loginButton" type="button" onclick="logIn(emailField, passwordField)">Login!</button>    
+    </div>
 
     <div id="container" class="list-group lead" style="text-align: center;"></div>
-    
-
-
+    <br><br>
+    <button id="logoutButton" type="button" onclick="logOut()">Log out!</button>
 
 </body>
 
 
-  <!-- Insert these scripts at the bottom of the HTML, but before you use any Firebase services -->
+<!-- Insert these scripts at the bottom of the HTML, but before you use any Firebase services -->
 
-  <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
-  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+<!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
 
-  <!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
-  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-analytics.js"></script>
+<!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-analytics.js"></script>
 
-  <!-- Add Firebase products that you want to use -->
-  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+<!-- Add Firebase products that you want to use -->
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 
-  <script>
-    // TODO: Replace the following with your app's Firebase project configuration
-    // For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
-    var firebaseConfig = {
-        apiKey: "AIzaSyDAROsN8zZlUjXlyu1wB0D58yv_TP75ZWc",
-        authDomain: "tutorial-47d32.firebaseapp.com",
-        projectId: "tutorial-47d32",
-        storageBucket: "tutorial-47d32.appspot.com",
-        messagingSenderId: "692836133513",
-        appId: "1:692836133513:web:237b16dd7c82ed9829f458"
-    };
+<script>
+// TODO: Replace the following with your app's Firebase project configuration
+// For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
+var firebaseConfig = {
+    apiKey: "AIzaSyDAROsN8zZlUjXlyu1wB0D58yv_TP75ZWc",
+    authDomain: "tutorial-47d32.firebaseapp.com",
+    projectId: "tutorial-47d32",
+    storageBucket: "tutorial-47d32.appspot.com",
+    messagingSenderId: "692836133513",
+    appId: "1:692836133513:web:237b16dd7c82ed9829f458"
+};
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);   
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);   
 
-    let isSignedIn = false; 
+let isSignedIn = false; 
     
 // DOM Elements
     const loginContainer = document.getElementById("loginContainer");
@@ -72,6 +66,24 @@
 
     const container = document.getElementById("container");
 
+// listener
+firebase.auth().onAuthStateChanged(firebaseUser => { //   
+  if (firebaseUser) { // user is signed in
+    console.log("User is logged in")
+    console.log(firebaseUser)
+    isSignedIn = true;
+
+ firebase.auth().currentUser.getIdToken(true)    
+  .then((idToken) => {
+      console.log(idToken)
+      getRestaurants(idToken);
+    })
+  } else { // no user exists, hence they are logged out 
+    // User is not logged in, show login / signup page
+    console.log("User is logged out")
+    isSignedIn = false;
+  }
+});
 
 // Log in
 function logIn(emailField, passwordField){
@@ -80,27 +92,10 @@ function logIn(emailField, passwordField){
     console.log("Email: " + email, "Password: " + password)
 
         
-    firebase
-    .auth()
-    .setPersistence(firebase.auth.Auth.Persistence.LOCAL) // set the persistence type
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL) // set the persistence type
     .then(() => {
-      return firebase
-        .auth()
-        .signInWithEmailAndPassword(email, password);
+      return firebase.auth().signInWithEmailAndPassword(email, password);
         console.log(email, password)
-    })
-    .then((userCredential) => {
-      // Signed in
-      isSignedIn = true;
-      var user = userCredential.user;
-      // ...
-      console.log(user); // check the console to see what data we get back about the user
-      firebase.auth()
-      .currentUser.getIdToken(true)    
-      .then((idToken) => {
-          console.log(idToken)
-          getRestaurants(idToken);
-      })
     })
     .catch((error) => {
       // Handle Errors here.
@@ -138,7 +133,7 @@ function showRestaurants(restaurants){
         let linkElement = document.createElement("a")
         linkElement.classList.add("list-group-item", "list-group-item-primary", "list-group-item-action")
         linkElement.innerHTML = restaurant.name
-        linkElement.setAttribute("href", `reviews.html?id=${restaurant.id}`)
+        linkElement.setAttribute("href", `reviews.html?id=${restaurant.id}&ownerid=${restaurant.ownerID}`)
         linkElement.appendChild(document.createElement("br"))
         container.appendChild(linkElement)
         console.log(restaurant)
@@ -148,14 +143,8 @@ function showRestaurants(restaurants){
 
 // Log out
 function logOut(){
-    firebase
-    .auth()
-    .signOut()
-    .then(() => {
-      // Sign-out successful.
-      isSignedIn = false;
-      console.log("Signed out")
-    })
+    firebase.auth().signOut()
+    .then(location.reload())
     .catch((error) => {
       // an error occured
       var errorCode = error.code
