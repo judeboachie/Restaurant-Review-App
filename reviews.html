@@ -9,47 +9,6 @@
     <link href="style.css" rel="stylesheet" type="text/css">
 
     <title>Restaurant Review App</title>
-    <style>
-
-      /* The Modal (background) */
-      .modal {
-        display: none; /* Hidden by default */
-        position: fixed; /* Stay in place */
-        z-index: 1; /* Sit on top */
-        left: 0;
-        top: 0;
-        width: 100%; /* Full width */
-        height: 100%; /* Full height */
-        overflow: auto; /* Enable scroll if needed */
-        background-color: rgb(0,0,0); /* Fallback color */
-        background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-      }
-
-      /* Modal Content/Box */
-      .modal-content {
-        background-color: #fefefe;
-        margin: 15% auto; /* 15% from the top and centered */
-        padding: 20px;
-        border: 1px solid #888;
-        width: 80%; /* Could be more or less, depending on screen size */
-      }
-
-      /* The Close Button */
-      .close {
-        color: #aaa;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-      }
-
-      .close:hover,
-      .close:focus {
-        color: black;
-        text-decoration: none;
-        cursor: pointer;
-      }
-
-    </style>
 </head>
 <body>
     <!--Restaurant Name-->
@@ -77,6 +36,7 @@
         <span class="close" id="closeButton">&times;</span>
           <form id="editForm">
             <p id="currentReviewId" style="display:none"></p>
+            <p id="currentReviewerID" style="display:none"></p>
             <label for="editName">Name: </label>
             <input type="text" id="editName" name="editName" style="margin-left:7px"/><br><br>
 
@@ -89,13 +49,53 @@
     </div>
 
 
-<script>
+    <br><br>
+    <div id="logoutContainer">
+      <a href="index.html"><button id="logoutButton" type="button" onclick="logOut()">Log out!</button></a>
+    </div>
+
+
+</body>
+
+<!-- Insert these scripts at the bottom of the HTML, but before you use any Firebase services -->
+
+  <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+
+  <!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-analytics.js"></script>
+
+  <!-- Add Firebase products that you want to use -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+
+  <script>
+    // TODO: Replace the following with your app's Firebase project configuration
+    // For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
+    var firebaseConfig = {
+        apiKey: "AIzaSyDAROsN8zZlUjXlyu1wB0D58yv_TP75ZWc",
+        authDomain: "tutorial-47d32.firebaseapp.com",
+        projectId: "tutorial-47d32",
+        storageBucket: "tutorial-47d32.appspot.com",
+        messagingSenderId: "692836133513",
+        appId: "1:692836133513:web:237b16dd7c82ed9829f458"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);   
+
+    let isSignedIn = false;
+
+  
     // DOM elements
     const urlParams = new URLSearchParams(window.location.search);
     const restaurantId = urlParams.get('id');
+    const ownerID = urlParams.get('ownerid');
 
     const restName = document.getElementById("restName");
     const container = document.getElementById("container");
+    const logoutButton = document.getElementById("logoutButton");
+
     
     // Elements for editing reviews
     const modal = document.getElementById("myModal");
@@ -103,6 +103,7 @@
     const editNameField = document.getElementById("editName");
     const editReviewField = document.getElementById("editReview");
     const currentReviewId = document.getElementById("currentReviewId")
+    const currentReviewerID = document.getElementById("currentReviewerID")
 
     // For the modal
     span.onclick = function() {
@@ -115,10 +116,37 @@
       }
     }
 
+// listener
+firebase
+    .auth()
+    .onAuthStateChanged(firebaseUser => { //   
+      if (firebaseUser) { // user is signed in
+        console.log("User is logged in")
+        console.log(firebaseUser)
+        isSignedIn = true;
+
+        firebase.auth()
+      .currentUser.getIdToken(true)    
+      .then((idToken) => {
+          console.log(idToken)
+          getReviews(idToken); // display reviews if they're signed in
+      })
+      } else { // no user exists, hence they are logged out 
+        // User is not logged in, show login / signup page
+        console.log("User is logged out")
+        isSignedIn = false;
+      }
+    });
+
 
 // Get all reviews    
-function getReviews(){
-        fetch(`http://127.0.0.1:3000/reviews/${restaurantId}`)
+function getReviews(authToken){
+        fetch(`http://127.0.0.1:3000/reviews/${restaurantId}`, {
+          method: "GET",
+          headers: {
+            AuthToken: authToken
+          }
+        })
         .then((data) =>{
             console.log(data)
             return data.json();            
@@ -130,9 +158,8 @@ function getReviews(){
         .catch((error) =>{
             console.log("Error. Something went wrong!");
         })
-}
+};
     
-getReviews();
 
 
 // Display all reviews
@@ -141,6 +168,7 @@ function drawPage(reviews){
         let comment = document.createElement("p")
         comment.classList.add("list-group-item", "list-group-item-primary", "list-group-item-action")
         comment.setAttribute("reviewID", item.id)
+        comment.setAttribute("reviewerID", item.reviewerId)
         comment.innerHTML = `<b>${item.review}</b><br>- - - - ${item.author}`
 
         // Creating an edit button for PUT requests
@@ -150,17 +178,21 @@ function drawPage(reviews){
         editButton.classList.add("btn", "btn-sm")
         editButton.innerHTML = "Edit"        
         comment.appendChild(editButton)
+            
         editButton.addEventListener('click', (e) => {
             // Open a dialogue box to edit
             let comment = e.target.parentElement
             let reviewID = comment.getAttribute("reviewid")
+            let reviewerID = comment.getAttribute("reviewerid")
             console.log(comment)
             console.log(reviewID)
+            console.log(reviewerID)
             
             modal.style.display = "block";
             editNameField.value = item.author
             editReviewField.value = item.review
             currentReviewId.innerHTML = reviewID;
+            currentReviewerID.innerHTML = reviewerID;
         })
             
         
@@ -189,14 +221,20 @@ function formSubmit(form) {
         console.log("name: " + userName, "review: " + userReview)
         addReview(userName, userReview);
         return false;
-}
+};
+
 
 // A function to add a review (POST)
 function addReview(userName, userReview){
+  firebase.auth().currentUser.getIdToken(true)    
+      .then((authToken) => {
+          console.log(authToken)
+      
     fetch(`http://127.0.0.1:3000/reviews/${restaurantId}`, { 
        method: "POST",
        headers: {
          "Content-Type": "application/json", // This lets the server know that we're sending a json object
+         AuthToken: authToken
        },
        body: JSON.stringify({ // The body object contains any info we want to send to the server 
           author: userName,
@@ -205,6 +243,7 @@ function addReview(userName, userReview){
           restID: restaurantId,
           picture: "123.jpeg",
           review: userReview,
+          reviewerId: firebase.auth().currentUser.uid
         })           
      })
        .then((response) => response.json())
@@ -215,30 +254,37 @@ function addReview(userName, userReview){
        .catch((error) => {
          console.error("Error:", error);
        });
-}
-
+    }
+)}
 
 function editFormSubmit(form) {
         // Grab the name and review input values from the editing form object
         const editedUserName = editNameField.value; 
         const editedUserReview = editReviewField.value; 
-        const reviewID = currentReviewId.innerHTML      
-        console.log("name: " + editedUserName, "review: " + editedUserReview, "reviewID: " + reviewID)
-        editReview(editedUserName, editedUserReview, reviewID);        
-}
+        const reviewID = currentReviewId.innerHTML    
+        const reviewerID = currentReviewerID.innerHTML  
+        console.log("name: " + editedUserName, "review: " + editedUserReview, "reviewID: " + reviewID, "reviewerID: " + reviewerID)
+        editReview(editedUserName, editedUserReview, reviewID, reviewerID);        
+      }
 
 
 // A function to update a review (PUT)
-function editReview(editedUserName, editedUserReview, reviewID){
-    fetch(`http://127.0.0.1:3000/reviews/${restaurantId}/${reviewID}`, { 
+function editReview(editedUserName, editedUserReview, reviewID, reviewerID){ 
+  firebase.auth().currentUser.getIdToken(true)    
+      .then((authToken) => {
+          console.log(authToken)       
+    fetch(`http://127.0.0.1:3000/reviews/${restaurantId}/${reviewID}`, {       
        method: "PUT",
        headers: {
          "Content-Type": "application/json",
+         AuthToken: authToken
        },
        body: JSON.stringify({ 
           author: editedUserName,
           name: editedUserName,          
           review: editedUserReview,
+          reviewerId: reviewerID,
+          uid: firebase.auth().currentUser.uid
         })           
      })
        .then((response) => response.json())
@@ -249,23 +295,45 @@ function editReview(editedUserName, editedUserReview, reviewID){
        .catch((error) => {
          console.error("Error:",error);
        });
-}
-
+    }
+)}
 
 // A function to delete a review (DELETE)
 function deleteReview(reviewID){
-    fetch(`http://127.0.0.1:3000/reviews/${restaurantId}/${reviewID}`, { 
+  firebase.auth().currentUser.getIdToken(true)    
+      .then((authToken) => {
+          console.log(authToken)
+      
+    fetch(`http://127.0.0.1:3000/reviews/${ownerID}/${restaurantId}/${reviewID}`, { 
        method: "DELETE",
        headers: {
          "Content-Type": "application/json",
-       }           
+         AuthToken: authToken
+       },
+          body: JSON.stringify({
+          owner: ownerID,
+          uid: firebase.auth().currentUser.uid
+        })           
      })
-       .then(location.reload())
-       .then(console.log(`Successful deletion: ${reviewID}`))       
+       //.then(location.reload())
        .catch((error) => {
          console.error("Error:", error);
        });
 }
+)}
+
+
+// Log out
+function logOut(){
+    firebase
+    .auth()
+    .signOut()
+    .catch((error) => {
+      // an error occured
+      var errorCode = error.code
+      var errorMessage = error.message;
+      console.log(error) 
+    });
+}
     </script>
-</body>
 </html>
