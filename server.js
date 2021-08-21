@@ -41,6 +41,25 @@ function checkAuth(req, res, next) { // creating the middleware
   }
 }
 
+
+// a POST request to register a new USER 
+app.post("/", (req, res) => {
+  db.collection("Users").doc(req.body.name)
+      .set({
+        name: req.body.name,
+        picture:  "123.jpeg",
+        userId: req.body.userId
+      })
+      .then(() => {
+          res.status(200);
+          res.json({ error: null });
+        })
+        .catch(() => {
+          res.status(400);
+          res.json({ error: "Something went wrong" });
+        });
+});
+
 app.use("/", checkAuth); // use this middleware on the get request for route "/"
 
 app.get("/", (req, res) => { // Landing page that displays all restaurants
@@ -59,7 +78,7 @@ app.get("/", (req, res) => { // Landing page that displays all restaurants
     .then((items) => {
         res.send(items)
     }) 
-    });
+});
 
 
 
