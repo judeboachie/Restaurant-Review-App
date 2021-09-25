@@ -12,6 +12,14 @@
 </head>
 <body>
 
+  <!--Navbar-->
+  <ul>
+    <li style="float:left"><a href="index.html">Home</a></li>
+    <li style="float:left"><a href=# id="userEmail"></a></li>
+    <li class="active"><a href="signup.html">Sign Up</a></li>
+    <li id="logoutButton" style="visibility:hidden"><a href="index.html" onclick="logOut()">Log out</a></li>
+  </ul>
+
     <div style="margin-left: 40%; margin-top: 10%">
       <input id="nameField" type="text" placeholder="Enter your name" style="width:30%; margin-bottom: 10px">
       <br>
@@ -19,11 +27,8 @@
       <br>
       <input id="passwordField" type="password" placeholder="Create a password" style="width:30%">
       <br>
-      <!--
-      <input id="passwordConfirmationField" type="text" placeholder="Enter your password again">
-      -->
       <br>
-      <button id="registerButton" type="button" onclick="createAccount(emailField, passwordField, nameField)">Register!</button>
+      <button id="registerButton" type="button" class="btn btn-primary" onclick="createAccount(emailField, passwordField, nameField)">Register</button>
     </div>
     
 </body>
@@ -44,10 +49,11 @@
   <script>
       // DOM Elements
 
+      const userEmail = document.getElementById("userEmail")
       const emailField = document.getElementById("emailField");
       const passwordField = document.getElementById("passwordField");
       const nameField = document.getElementById("nameField");
-      //const passwordConfirmationField = document.getElementById("passwordConfirmationField")
+      const logoutButton = document.getElementById("logoutButton");
       const registerButton = document.getElementById("registerButton");        
 
 
@@ -66,6 +72,31 @@
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
 
+    let isSignedIn = false;
+
+
+// listener
+firebase
+    .auth()
+    .onAuthStateChanged(firebaseUser => { //   
+      if (firebaseUser) { // user is signed in
+        console.log("User is logged in")
+        console.log(firebaseUser)
+        isSignedIn = true;
+        userEmail.innerHTML = firebaseUser.email
+        logoutButton.style.visibility = "visible"
+
+        firebase.auth()
+      .currentUser.getIdToken(true)    
+      .then((idToken) => {
+          console.log(idToken);
+      })
+      } else { 
+        console.log("User is logged out")
+        isSignedIn = false;
+      }
+    });
+
     // Account creation
 function createAccount(emailField, passwordField, nameField){
     const email = emailField.value;
@@ -73,12 +104,14 @@ function createAccount(emailField, passwordField, nameField){
     const name = nameField.value
     console.log("Email: " + email, "Password: " + password, "Name: " + name)
   
-    firebase.auth().createUserWithEmailAndPassword(email, password) // email, password
+    firebase
+    .auth()
+    .createUserWithEmailAndPassword(email, password) // email, password
     .then((userCredential) => {
       // Signed in
       var user = userCredential.user;
 
-      fetch("http://127.0.0.1:3000/", {
+      fetch("http://127.0.0.1:3000/createUser", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -100,6 +133,20 @@ function createAccount(emailField, passwordField, nameField){
       var errorCode = error.code;
       var errorMessage = error.message;
       console.log(error);
+    });
+}
+
+// Log out
+function logOut(){
+    firebase
+    .auth()
+    .signOut()
+    .then(location.reload())
+    .catch((error) => {
+      // an error occured
+      var errorCode = error.code
+      var errorMessage = error.message;
+      console.log(error) 
     });
 }
 </script>
