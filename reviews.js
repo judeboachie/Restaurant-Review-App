@@ -3,34 +3,8 @@ const db = admin.firestore();
 var express = require("express"); // import express 
 var router = express.Router() // create the router
 
-
-function checkAuth(req, res, next) { // creating the middleware
-  if (req.headers.authtoken) { // the token is attached to the header of the get request on index.html "getRestaurants(authToken)"
-    admin
-      .auth()
-      .verifyIdToken(req.headers.authtoken) // want to verify that this is a valid token 
-      .then((user) => { // gives back a firebase user object 
-        console.log("verified");
-        res.locals.userId = user.user_id // store this id in res.locals
-        next(); // accept the request and pass it over to the router 
-      })
-      .catch(() => {
-        res.status(403).send("Unauthorized"); // verification failed, so reject the request
-      });
-  } else {
-    res.status(403).send("Unauthorized"); // no auth token provided
-  }
-}
-
-router.get("/:restaurantId", checkAuth); // use this middleware on the get request for route "/:restaurantId"
-router.post("/:restaurantId", checkAuth);
-router.put("/:restaurantId/:reviewID", checkAuth);
-router.delete("/:restaurantId/:reviewID", checkAuth);
-
-
-
-
 // a GET request to read all the reviews for a restaurant
+
 router.route("/:restaurantId") 
     .get((req, res) => { //the : means we are expecting a parameter called restaurantId
         db 
@@ -82,7 +56,7 @@ router
 router
     .route("/:restaurantId/:reviewID") 
     .put((req, res) => {
-      if (req.body.uid == req.body.reviewerId){ // a review can only be edited by the original poster 
+      if (req.body.uid == req.body.reviewerId){ // a review can only be edited by the original poster
       db.collection("Review").doc(req.params.reviewID)
         .set(req.body, {merge: true})         
         .then(() => {
@@ -96,6 +70,11 @@ router
         });
       } else {
         console.log("You can not edit this review.")
+        .catch((error) => {
+          console.log(error)
+          res.status(400);
+          res.json({ error: "Something went wrong" });
+        });
       }    
 })
 
@@ -105,20 +84,43 @@ router
 router
     .route("/:ownerID/:restaurantId/:reviewID")
     .delete((req, res) => { 
-      if(req.body.uid == req.body.owner){ // a review can only be deleted by the restaurant owner
-      db.collection(`Review`).doc(req.params.reviewID)
-        .delete() //Delete the document
-        .then(() => {
-          res.status(200);
-          res.json({ error: null });
-        })
-        .catch(() => {
-          res.status(400);
-          res.json({ error: "Something went wrong" });
-        });
-       } else {
-         console.log("You can't delete this review.")
-       }         
+      console.log("Delete")
+      console.log(res.locals);
+
+      db.collection('Review').doc(req.params.reviewID)
+      .get()
+      .then((q) => {
+        let reviewDoc = q.data()
+        return reviewDoc.restaurantID
+      })
+      .then((restaurantID) => {
+        return db.collection('Restaurants').doc(restaurantID)
+        .get()
+      })
+      .then((q) => {
+        let restaurantDoc = q.data()
+        return restaurantDoc.ownerID
+      })
+      .then(ownerID => {
+        console.log("Got owner:", res.locals.userId, ownerID)
+        if (res.locals.userId == ownerID){
+          console.log("Is owner")
+          return db.collection(`Review`).doc(req.params.reviewID)
+          .delete()
+        } else {  
+          console.log("Not owner")
+          throw new Error("Not owner");   // So basically when we have a promise, we use .then to chain follow up actions. In the case where a .then statement fails, we use a catch statement to capture the failure. When we write .then statements, we can also prematurely exit the chain with a THROW, where we create our own error, which gets captured by the catch statement.
+        }
+      })
+      .then(() => {
+        res.status(200);
+        res.json({ error: null });
+      })
+      .catch((error) => {
+        res.status(400);
+        res.json({ error: "Something went wrong" });
+        console.log(error);
+      });      
 })
         
 
