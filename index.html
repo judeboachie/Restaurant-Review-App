@@ -10,91 +10,122 @@
     <title>Restaurant Review App</title>
 </head>
 <body>
-    
+    <!--Navbar-->
+  <ul>
+    <li style="float:left" class="active"><a href="index.html">Home</a></li>
+    <li style="float:left"><a href=# id="userEmail"></a></li>    
+    <li><a href="signup.html">Sign Up</a>
+    <li id="logoutButton" style="visibility:hidden"><a href="index.html" onclick="logOut()">Log out</a></li>
+  </ul>
+
     <h1 id="appName">Retaurants</h1>
     <br><br><br>
+
     <div id="loginContainer">
         <input id="emailField" type="text" placeholder="Enter your email address">
         <br>
         <input id="passwordField" type="password" placeholder="Enter your password">
-        <br><br>
-        <button id="loginButton" type="button" onclick="logIn(emailField, passwordField)">Login!</button>    
+        <br>
+        
+        <br>
+        <button id="loginButton" type="button" class="btn btn-primary" onclick="logIn(emailField, passwordField)">Login!</button>
+    
     </div>
+
+    <!--Spinner for loading-->
+    <div class="loader"></div>
 
     <div id="container" class="list-group lead" style="text-align: center;"></div>
     <br><br>
-    <button id="logoutButton" type="button" onclick="logOut()">Log out!</button>
+
+
 
 </body>
 
 
-<!-- Insert these scripts at the bottom of the HTML, but before you use any Firebase services -->
+  <!-- Insert these scripts at the bottom of the HTML, but before you use any Firebase services -->
 
-<!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
-<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+  <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
 
-<!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
-<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-analytics.js"></script>
+  <!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-analytics.js"></script>
 
-<!-- Add Firebase products that you want to use -->
-<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+  <!-- Add Firebase products that you want to use -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 
-<script>
-// TODO: Replace the following with your app's Firebase project configuration
-// For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
-var firebaseConfig = {
-    apiKey: "AIzaSyDAROsN8zZlUjXlyu1wB0D58yv_TP75ZWc",
-    authDomain: "tutorial-47d32.firebaseapp.com",
-    projectId: "tutorial-47d32",
-    storageBucket: "tutorial-47d32.appspot.com",
-    messagingSenderId: "692836133513",
-    appId: "1:692836133513:web:237b16dd7c82ed9829f458"
-};
+  <script>
+    // TODO: Replace the following with your app's Firebase project configuration
+    // For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
+    var firebaseConfig = {
+        apiKey: "AIzaSyDAROsN8zZlUjXlyu1wB0D58yv_TP75ZWc",
+        authDomain: "tutorial-47d32.firebaseapp.com",
+        projectId: "tutorial-47d32",
+        storageBucket: "tutorial-47d32.appspot.com",
+        messagingSenderId: "692836133513",
+        appId: "1:692836133513:web:237b16dd7c82ed9829f458"
+    };
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);   
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);   
 
-let isSignedIn = false; 
+    let isSignedIn = false; 
     
 // DOM Elements
+    const userEmail = document.getElementById("userEmail")
     const loginContainer = document.getElementById("loginContainer");
     const emailField = document.getElementById("emailField")
     const passwordField = document.getElementById("passwordField")
     const loginButton = document.getElementById("loginButton")
     const logoutButton = document.getElementById("logoutButton")
+    const loader = document.querySelector('.loader');
 
     const container = document.getElementById("container");
 
-// listener
-firebase.auth().onAuthStateChanged(firebaseUser => { //   
-  if (firebaseUser) { // user is signed in
-    console.log("User is logged in")
-    console.log(firebaseUser)
-    isSignedIn = true;
+    loader.style.display = "block";
 
- firebase.auth().currentUser.getIdToken(true)    
-  .then((idToken) => {
-      console.log(idToken)
-      getRestaurants(idToken);
-    })
-  } else { // no user exists, hence they are logged out 
-    // User is not logged in, show login / signup page
-    console.log("User is logged out")
-    isSignedIn = false;
-  }
-});
+// Listener
+    firebase
+    .auth()
+    .onAuthStateChanged(firebaseUser => { //   
+      if (firebaseUser) { // user is signed in
+        console.log("User is logged in")
+        console.log(firebaseUser)
+        isSignedIn = true;
+        userEmail.innerHTML = firebaseUser.email
+        logoutButton.style.visibility = "visible"
+
+        firebase.auth()
+      .currentUser.getIdToken(true)    
+      .then((idToken) => {
+          console.log(idToken)
+          getRestaurants(idToken);
+      })
+      } else { // no user exists, hence they are logged out 
+        // User is not logged in, show login / signup page
+        loader.style.display = "none";
+        console.log("User is logged out")
+        isSignedIn = false;
+      }
+    });
+
 
 // Log in
 function logIn(emailField, passwordField){
+    loader.style.display = "block";
     const email = emailField.value
     const password = passwordField.value
     console.log("Email: " + email, "Password: " + password)
 
         
-    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL) // set the persistence type
+    firebase
+    .auth()
+    .setPersistence(firebase.auth.Auth.Persistence.LOCAL) // set the persistence type
     .then(() => {
-      return firebase.auth().signInWithEmailAndPassword(email, password);
+      return firebase
+        .auth()
+        .signInWithEmailAndPassword(email, password);
         console.log(email, password)
     })
     .catch((error) => {
@@ -105,9 +136,12 @@ function logIn(emailField, passwordField){
     });
 };
 
+
 // Get restaurant data from the server
 function getRestaurants(authToken){
-    fetch("http://127.0.0.1:3000/", {
+    fetch("https://restaurantreviewappjb.herokuapp.com/", {
+    //fetch("http://127.0.0.1:3000/", {
+
         method: "GET",
         headers: {
             AuthToken: authToken
@@ -126,24 +160,34 @@ function getRestaurants(authToken){
     })
 }
 
+
 // Displays restaurants on the webpage
 function showRestaurants(restaurants){
     loginContainer.style.display = "none";
+    loader.style.display = "none";
+
     restaurants.forEach(restaurant =>{
         let linkElement = document.createElement("a")
         linkElement.classList.add("list-group-item", "list-group-item-primary", "list-group-item-action")
         linkElement.innerHTML = restaurant.name
-        linkElement.setAttribute("href", `reviews.html?id=${restaurant.id}&ownerid=${restaurant.ownerID}`)
+        linkElement.setAttribute("href", `reviews.html?id=${restaurant.id}&name=${restaurant.name}`)
         linkElement.appendChild(document.createElement("br"))
         container.appendChild(linkElement)
         console.log(restaurant)
+
+        linkElement.addEventListener("click", function(){
+            let ownerID = restaurant.ownerID
+            sessionStorage.setItem("ownerID", JSON.stringify(ownerID));
+        })
     })
 }
 
 
 // Log out
 function logOut(){
-    firebase.auth().signOut()
+    firebase
+    .auth()
+    .signOut()
     .then(location.reload())
     .catch((error) => {
       // an error occured
