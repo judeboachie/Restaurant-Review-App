@@ -1,14 +1,19 @@
+require('dotenv').config()
 const admin = require('firebase-admin');
 const serviceAccount = require('./tutorial-47d32-firebase-adminsdk-4kuzo-dff1b09ca6.json'); // auth key... don't share this with anyone
+
+
 admin.initializeApp({ // authentification with the key above
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(JSON.parse(Buffer.from(process.env.GOOGLE_CONFIG_BASE64, 'base64').toString('ascii'))
+  )
 });
 const db = admin.firestore(); 
 
 const express = require("express");
 const app = express();
-const hostname = "127.0.0.1";
-const port = 3000;
+const hostname = "0.0.0.0";
+const port = process.env.PORT || 3000; //process.env is a config file / environment file where variables can be set outside of our code. 
+
 
 const cors = require("cors") // middleware
 app.use(cors())
@@ -20,8 +25,6 @@ app.use((req, res, next) => {
 
 app.use(express.json()) // gets json data and converts to object
 const reviewsRouter = require("./routes/reviews") // Inside a folder called "routes", there is a js file called "reviews" that we are importing here
-
-app.use("/reviews" , reviewsRouter) // Any endpoint that begins with /reviews will be handled by the reviews.js file
 
 function checkAuth(req, res, next) { // creating the middleware
   if (req.headers.authtoken) { // the token is attached to the header of the get request on index.html "getRestaurants(authToken)"
@@ -41,9 +44,11 @@ function checkAuth(req, res, next) { // creating the middleware
   }
 }
 
+app.use("/reviews" , [checkAuth, reviewsRouter]) // Any endpoint that begins with /reviews will be handled by the reviews.js file
+
 
 // a POST request to register a new USER 
-app.post("/", (req, res) => {
+app.post("/createUser", (req, res) => {
   db.collection("Users").doc(req.body.name)
       .set({
         name: req.body.name,
@@ -78,10 +83,10 @@ app.get("/", (req, res) => { // Landing page that displays all restaurants
     .then((items) => {
         res.send(items)
     }) 
-});
+    });
 
 
 
-const server = app.listen(3000, hostname, () => {
+const server = app.listen(port, hostname, () => {
         console.log(`Server running at http://${hostname}:${port}/`);
       });
