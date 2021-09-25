@@ -11,11 +11,26 @@
     <title>Restaurant Review App</title>
 </head>
 <body>
+
+  <!--Navbar-->
+  <ul>
+    <li style="float:left"><a href="index.html">Home</a></li>
+    <li style="float:left"><a href=# id="userEmail"></a></li>    
+    <li><a href="signup.html">Sign Up</a>
+    <li><a href="index.html" onclick="logOut()">Log out</a></li>
+  </ul>
+
     <!--Restaurant Name-->
     <h1><div id="restName"></div></h1>
+    <br>  
+
+    <!--Spinner for loading-->
+    <div class="loader"></div>
 
     <!--Reviews contained here-->
+    <br>
     <div id="container" class="list-group lead"></div>
+
     <div id="formContainer">
         <form onsubmit="return formSubmit(this);">
             <label for="name">Name:</label>
@@ -23,7 +38,7 @@
             <br>
             <label for="newReview">Review:</label>
             <input type="text" id="newReview" name="newReview" style="width:70%" placeholder="Share your thoughts.."/>
-            
+            <br><br>
             <div id="buttonContainer">
             <input type="submit" value="Submit" class="btn btn-primary" style="width:40%"/>
             </div>
@@ -48,11 +63,6 @@
       </div>
     </div>
 
-
-    <br><br>
-    <div id="logoutContainer">
-      <a href="index.html"><button id="logoutButton" type="button" onclick="logOut()">Log out!</button></a>
-    </div>
 
 
 </body>
@@ -90,11 +100,15 @@
     // DOM elements
     const urlParams = new URLSearchParams(window.location.search);
     const restaurantId = urlParams.get('id');
-    const ownerID = urlParams.get('ownerid');
+    const restaurantName = urlParams.get('name');
 
     const restName = document.getElementById("restName");
     const container = document.getElementById("container");
+    const userEmail = document.getElementById("userEmail")
     const logoutButton = document.getElementById("logoutButton");
+
+    const loader = document.querySelector('.loader');
+
 
     
     // Elements for editing reviews
@@ -116,6 +130,9 @@
       }
     }
 
+    restName.innerHTML = restaurantName;
+    loader.style.display = "block";
+
 // listener
 firebase
     .auth()
@@ -124,6 +141,7 @@ firebase
         console.log("User is logged in")
         console.log(firebaseUser)
         isSignedIn = true;
+        userEmail.innerHTML = firebaseUser.email
 
         firebase.auth()
       .currentUser.getIdToken(true)    
@@ -141,7 +159,7 @@ firebase
 
 // Get all reviews    
 function getReviews(authToken){
-        fetch(`http://127.0.0.1:3000/reviews/${restaurantId}`, {
+        fetch(`https://restaurantreviewappjb.herokuapp.com/reviews/${restaurantId}`, {
           method: "GET",
           headers: {
             AuthToken: authToken
@@ -152,8 +170,15 @@ function getReviews(authToken){
             return data.json();            
         })
         .then((data) => {
+          if (data.length == 0){
+            loader.style.display = "none"
+            container.style.textAlign = "center"
+            container.style.marginBottom = "25px"
+            container.innerHTML = "There are no reviews for this restaurant."
+          } else {
             console.log(data);
             drawPage(data);
+          }
         })
         .catch((error) =>{
             console.log("Error. Something went wrong!");
@@ -164,6 +189,7 @@ function getReviews(authToken){
 
 // Display all reviews
 function drawPage(reviews){
+        loader.style.display = "none";
         reviews.forEach(item =>{
         let comment = document.createElement("p")
         comment.classList.add("list-group-item", "list-group-item-primary", "list-group-item-action")
@@ -178,7 +204,6 @@ function drawPage(reviews){
         editButton.classList.add("btn", "btn-sm")
         editButton.innerHTML = "Edit"        
         comment.appendChild(editButton)
-            
         editButton.addEventListener('click', (e) => {
             // Open a dialogue box to edit
             let comment = e.target.parentElement
@@ -209,7 +234,6 @@ function drawPage(reviews){
         })        
 
         container.appendChild(comment)
-        restName.innerHTML = item.restaurant
         console.log(item)
     })
 }
@@ -221,16 +245,17 @@ function formSubmit(form) {
         console.log("name: " + userName, "review: " + userReview)
         addReview(userName, userReview);
         return false;
-};
+      };
 
 
 // A function to add a review (POST)
 function addReview(userName, userReview){
-  firebase.auth().currentUser.getIdToken(true)    
+  firebase.auth()
+      .currentUser.getIdToken(true)    
       .then((authToken) => {
           console.log(authToken)
       
-    fetch(`http://127.0.0.1:3000/reviews/${restaurantId}`, { 
+    fetch(`https://restaurantreviewappjb.herokuapp.com/reviews/${restaurantId}`, { 
        method: "POST",
        headers: {
          "Content-Type": "application/json", // This lets the server know that we're sending a json object
@@ -254,7 +279,7 @@ function addReview(userName, userReview){
        .catch((error) => {
          console.error("Error:", error);
        });
-    }
+}
 )}
 
 function editFormSubmit(form) {
@@ -270,10 +295,11 @@ function editFormSubmit(form) {
 
 // A function to update a review (PUT)
 function editReview(editedUserName, editedUserReview, reviewID, reviewerID){ 
-  firebase.auth().currentUser.getIdToken(true)    
+  firebase.auth()
+      .currentUser.getIdToken(true)    
       .then((authToken) => {
           console.log(authToken)       
-    fetch(`http://127.0.0.1:3000/reviews/${restaurantId}/${reviewID}`, {       
+    fetch(`https://restaurantreviewappjb.herokuapp.com/reviews/${restaurantId}/${reviewID}`, {       
        method: "PUT",
        headers: {
          "Content-Type": "application/json",
@@ -300,11 +326,14 @@ function editReview(editedUserName, editedUserReview, reviewID, reviewerID){
 
 // A function to delete a review (DELETE)
 function deleteReview(reviewID){
-  firebase.auth().currentUser.getIdToken(true)    
+  firebase.auth()
+      .currentUser.getIdToken(true)    
       .then((authToken) => {
-          console.log(authToken)
-      
-    fetch(`http://127.0.0.1:3000/reviews/${ownerID}/${restaurantId}/${reviewID}`, { 
+      console.log(authToken)
+
+    let ownerID = JSON.parse(sessionStorage.getItem("ownerID"))
+
+    fetch(`https://restaurantreviewappjb.herokuapp.com/reviews/${ownerID}/${restaurantId}/${reviewID}`, { 
        method: "DELETE",
        headers: {
          "Content-Type": "application/json",
@@ -315,9 +344,15 @@ function deleteReview(reviewID){
           uid: firebase.auth().currentUser.uid
         })           
      })
-       //.then(location.reload())
-       .catch((error) => {
-         console.error("Error:", error);
+       .then((response) => {
+         if (response.ok) {
+          location.reload()
+         } else {
+          alert("oOps, something went wrong")
+         }
+        })
+       .catch((error) => { // catches network failures
+         console.log(error);
        });
 }
 )}
