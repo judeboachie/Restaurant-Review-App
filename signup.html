@@ -111,7 +111,7 @@ function createAccount(emailField, passwordField, nameField){
       // Signed in
       var user = userCredential.user;
 
-      fetch("http://127.0.0.1:3000/createUser", {
+      fetch("https://restaurantreviewappjb.herokuapp.com/createUser", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
