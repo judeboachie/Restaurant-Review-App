@@ -1,6 +1,5 @@
 require('dotenv').config()
 const admin = require('firebase-admin');
-const serviceAccount = require('./tutorial-47d32-firebase-adminsdk-4kuzo-dff1b09ca6.json'); // auth key... don't share this with anyone
 
 
 admin.initializeApp({ // authentification with the key above
